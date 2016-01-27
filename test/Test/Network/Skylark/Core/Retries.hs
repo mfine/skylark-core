@@ -23,7 +23,7 @@ import Test.Tasty
 import Test.Tasty.QuickCheck
 
 instance Arbitrary RetryState where
-  arbitrary = RetryState <$> arbitrary <*> arbitrary <*> arbitrary
+  arbitrary = RetryState <$> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary
 
 limits :: Ord a => Maybe a -> a -> a -> Bool
 limits delay lo hi =

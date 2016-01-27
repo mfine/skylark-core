@@ -350,6 +350,8 @@ data RetryState = RetryState
   { _rsCount :: Word
   , _rsDelay :: Maybe Word
   , _rsTotal :: Word
+  , _rsStart :: Maybe UTCTime
+  , _rsLast  :: Maybe UTCTime
   } deriving ( Eq, Show )
 
 $(makeLenses ''RetryState)
@@ -359,6 +361,8 @@ instance Default RetryState where
     { _rsCount = 0
     , _rsDelay = Nothing
     , _rsTotal = 0
+    , _rsStart = Nothing
+    , _rsLast  = Nothing
     }
 
 newtype RetryPolicy = RetryPolicy

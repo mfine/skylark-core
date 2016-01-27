@@ -28,47 +28,55 @@ import Control.Lens
 import Control.Monad.Catch
 import Control.Monad.Random
 import Data.Default
+import Data.Time
 import Network.Skylark.Core.Prelude hiding (catch)
 import Network.Skylark.Core.Types
 
 -- | Update retry state, setting delay from policy and incrementing count.
 --
-update :: MonadIO m => RetryPolicy -> RetryState -> m RetryState
+update :: RetryPolicy -> RetryState -> IO RetryState
 update policy state = do
-  delay <- liftIO $ runRetryPolicy policy state
+  now   <- getCurrentTime
+  delay <- runRetryPolicy policy state
   return $ state &
     rsCount +~ 1 &
     rsDelay .~ delay &
-    rsTotal +~ fromMaybe 0 delay
+    rsTotal +~ fromMaybe 0 delay &
+    rsLast .~ Just now
 
 -- | Apply retry state, update and sleep if necessary.
 --
-apply :: MonadIO m => RetryPolicy -> RetryState -> m RetryState
+apply :: RetryPolicy -> RetryState -> IO RetryState
 apply policy state = do
   state' <- update policy state
-  maybe (return ()) (liftIO . threadDelay . fromIntegral) $ state' ^. rsDelay
+  maybe (return ()) (threadDelay . fromIntegral) $ state' ^. rsDelay
   return state'
+
+defRetryState :: IO RetryState
+defRetryState = do
+  now <- getCurrentTime
+  return $ def & rsStart .~ Just now
 
 -- | Retry an action with a policy and a check routine.
 --
 retry :: MonadIO m => RetryPolicy -> (a -> m Bool) -> m a -> m a
 retry policy check action =
-  loop def where
+  liftIO defRetryState >>= loop where
     loop state = do
       result <- action
       again <- check result
-      state' <- apply policy state
+      state' <- liftIO $ apply policy state
       if not again || isNothing (state' ^. rsDelay) then return result else loop state'
 
 -- | Recover exceptions from an action with a policy and a check exception routine.
 --
 recover :: (MonadIO m, MonadCatch m, Exception e) => RetryPolicy -> (e -> m Bool) -> m a -> m a
-recover policy check action =
-  loop def where
+recover policy check action = do
+  liftIO defRetryState >>= loop where
     loop state =
       catch action $ \e -> do
         again <- maybe (throwM e) check (fromException e)
-        state' <- apply policy state
+        state' <- liftIO $ apply policy state
         if not again || isNothing (state' ^. rsDelay) then throwM e else loop state'
 
 -- | Recover all exceptions.
