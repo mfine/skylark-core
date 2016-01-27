@@ -15,12 +15,21 @@ module Test.Network.Skylark.Core.Retries
 import Control.Lens                 hiding (pre)
 import Control.Monad.Catch
 import Data.IORef
+import Data.Time
 import Network.Skylark.Core.Prelude
 import Network.Skylark.Core.Retries
 import Network.Skylark.Core.Types
 import Test.QuickCheck.Monadic
 import Test.Tasty
 import Test.Tasty.QuickCheck
+
+instance Arbitrary UTCTime where
+  arbitrary = do
+    randomDay   <- choose (1, 29)      :: Gen Int
+    randomMonth <- choose (1, 12)      :: Gen Int
+    randomYear  <- choose (1970, 2015) :: Gen Integer
+    randomTime  <- choose (0, 86401)   :: Gen Int
+    return $ UTCTime (fromGregorian randomYear randomMonth randomDay) (fromIntegral randomTime)
 
 instance Arbitrary RetryState where
   arbitrary = RetryState <$> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary
