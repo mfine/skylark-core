@@ -81,6 +81,7 @@ test-suite test
                      , Test.Network.Skylark.Core.Setup
                      , Test.Network.Skylark.Core.TChans
                      , Test.Network.Skylark.Core.Test
+                     , Test.Network.Skylark.Core.Types
   build-depends:       base
                      , basic-prelude
                      , data-default
@@ -97,6 +98,7 @@ test-suite test
                      , tasty-hunit
                      , tasty-quickcheck
                      , text
+                     , time
   ghc-options:         -Wall
   default-language:    Haskell2010
   default-extensions:  NoImplicitPrelude

@@ -30,7 +30,6 @@ import Control.Monad.Trans.AWS      hiding (LogLevel, Request)
 import Control.Monad.Trans.Either
 import Control.Monad.Trans.Resource
 import Data.Aeson                   hiding ((.!=), (.=))
-import Data.Aeson.Types
 import Data.CaseInsensitive
 import Data.Default
 import Data.Monoid
@@ -280,7 +279,7 @@ instance Txt Request where
       (txt $ requestMethod req) (txt $ rawPathInfo req)
 
 class UnTxt a where
-  untxt :: Text -> Parser a
+  untxt :: (Monad m) => Text -> m a
 
 instance UnTxt String where
   untxt = return . unpack

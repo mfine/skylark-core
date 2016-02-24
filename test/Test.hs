@@ -12,6 +12,7 @@ import qualified Test.Network.Skylark.Core.Metrics as Metrics
 import qualified Test.Network.Skylark.Core.Retries as Retries
 import qualified Test.Network.Skylark.Core.Setup   as Setup
 import qualified Test.Network.Skylark.Core.TChans  as TChans
+import qualified Test.Network.Skylark.Core.Types   as Types
 import           Test.Tasty
 
 tests :: TestTree
@@ -21,6 +22,7 @@ tests = testGroup "Tests"
   , Metrics.tests
   , Setup.tests
   , TChans.tests
+  , Types.tests
   ]
 
 main :: IO ()
