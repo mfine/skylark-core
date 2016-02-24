@@ -30,6 +30,7 @@ import Control.Monad.Trans.AWS      hiding (LogLevel, Request)
 import Control.Monad.Trans.Either
 import Control.Monad.Trans.Resource
 import Data.Aeson                   hiding ((.!=), (.=))
+import Data.Aeson.Types
 import Data.CaseInsensitive
 import Data.Default
 import Data.Monoid
@@ -279,15 +280,14 @@ instance Txt Request where
       (txt $ requestMethod req) (txt $ rawPathInfo req)
 
 class UnTxt a where
-  untxt :: (Monad m) => Text -> m a
+  untxt :: Text -> Parser a
 
 instance UnTxt String where
-  untxt = return . Data.Text.unpack
+  untxt = return . unpack
 
 instance UnTxt UTCTime where
-  untxt s = do
-    s' <- untxt s
-    parseTimeM False defaultTimeLocale "%FT%T%z" s'
+  untxt s =
+    untxt s >>= parseTimeM False defaultTimeLocale "%FT%T%z"
 
 instance ToJSON UUID where
   toJSON = toJSON . toText
