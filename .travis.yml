@@ -30,6 +30,16 @@ install:
   - stack install hlint
   - stack build skylark-core --only-dependencies
 
+before_script:
+  # Download AWS cli
+  - pip install --user --upgrade awscli
+  # Download local DynamoDB
+  - mkdir -p .dynamo
+  - pushd .dynamo
+  - travis_retry curl -L -o latest-dynamo.tar.gz http://dynamodb-local.s3-website-us-west-2.amazonaws.com/dynamodb_local_latest.tar.gz
+  - tar -zxvf latest-dynamo.tar.gz
+  - popd
+
 script:
   - make lint
   - AWS_SECRET_ACCESS_KEY=foo AWS_ACCESS_KEY_ID=bar stack build skylark-core --test

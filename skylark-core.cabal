@@ -20,6 +20,9 @@ library
                      , Network.Skylark.Core.Async
                      , Network.Skylark.Core.Conf
                      , Network.Skylark.Core.Constants
+                     , Network.Skylark.Core.Data.JSON
+                     , Network.Skylark.Core.Data.Text
+                     , Network.Skylark.Core.DynamoDB
                      , Network.Skylark.Core.Lens.TH
                      , Network.Skylark.Core.Maps
                      , Network.Skylark.Core.MVars
@@ -28,6 +31,7 @@ library
                      , Network.Skylark.Core.Retries
                      , Network.Skylark.Core.Setup
                      , Network.Skylark.Core.TChans
+                     , Network.Skylark.Core.TH
                      , Network.Skylark.Core.Time
                      , Network.Skylark.Core.Timers
                      , Network.Skylark.Core.Trace
@@ -37,10 +41,13 @@ library
   build-depends:       MonadRandom
                      , aeson
                      , amazonka
+                     , amazonka-core
                      , amazonka-dynamodb
                      , async
                      , base >= 4.7 && < 5
                      , basic-prelude
+                     , base64-bytestring
+                     , bytestring
                      , case-insensitive
                      , conduit
                      , data-default
@@ -65,6 +72,8 @@ library
                      , transformers-base
                      , unordered-containers
                      , uuid
+                     , uuid-types
+                     , vector
                      , wai
                      , warp
                      , yaml
@@ -80,15 +89,21 @@ test-suite test
   main-is:             Test.hs
   other-modules:       Paths_skylark_core
                      , Test.Network.Skylark.Core.Conf
+                     , Test.Network.Skylark.Core.DynamoDB
                      , Test.Network.Skylark.Core.Metrics
                      , Test.Network.Skylark.Core.Retries
                      , Test.Network.Skylark.Core.Setup
                      , Test.Network.Skylark.Core.TChans
                      , Test.Network.Skylark.Core.Test
+                     , Test.Network.Skylark.Core.Time
                      , Test.Network.Skylark.Core.Types
-  build-depends:       base
+  build-depends:       aeson
+                     , amazonka-dynamodb
+                     , base
                      , basic-prelude
+                     , bytestring
                      , data-default
+                     , derive
                      , envy
                      , exceptions
                      , lens
@@ -103,6 +118,7 @@ test-suite test
                      , tasty-quickcheck
                      , text
                      , time
+                     , unordered-containers
   ghc-options:         -Wall
   default-language:    Haskell2010
   default-extensions:  NoImplicitPrelude

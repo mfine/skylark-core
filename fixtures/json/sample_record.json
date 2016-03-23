@@ -1,0 +1,1 @@
+{"adts":["A1","A2"],"format_array":[{"major_version":"bar","name":"foo"},{"major_version":"bazbar","name":"baz"}],"double":2.5,"text":"foo","format":{"major_version":"bar","name":"foo"},"text_array":["foo","bar"],"maybe_int":3,"adt":"A1","int_array":[2,3,4],"maybe_text":"baz","maybe_double":2.5,"maybe_bool":false,"int":2,"bool":false}

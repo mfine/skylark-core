@@ -18,35 +18,38 @@
 
 module Network.Skylark.Core.Types where
 
-import Control.Concurrent.MVar
-import Control.Concurrent.STM
-import Control.Lens                 hiding ((.=))
-import Control.Monad.Base
-import Control.Monad.Catch
-import Control.Monad.Error.Class
-import Control.Monad.Logger
-import Control.Monad.Random
-import Control.Monad.Reader
-import Control.Monad.Trans.AWS      hiding (LogLevel, Request)
-import Control.Monad.Trans.Either
-import Control.Monad.Trans.Resource
-import Data.Aeson                   hiding ((.!=), (.=))
-import Data.CaseInsensitive
-import Data.Default
-import Data.Monoid
-import Data.Text                    (pack, unpack)
-import Data.Text.Lazy               (toStrict)
-import Data.Text.Lazy.Builder       hiding (fromText)
-import Data.Time
-import Data.UUID
-import Network.AWS.DynamoDB
-import Network.HTTP.Types
-import Network.Skylark.Core.Lens.TH
-import Network.Skylark.Core.Prelude hiding (mask, uninterruptibleMask)
-import Network.Wai
-import Network.Wai.Handler.Warp
-import System.Envy
-import System.Statgrab
+import           Control.Concurrent.MVar
+import           Control.Concurrent.STM
+import           Control.Lens                 hiding ((.=))
+import           Control.Monad.Base
+import           Control.Monad.Catch
+import           Control.Monad.Error.Class
+import           Control.Monad.Logger
+import           Control.Monad.Random
+import           Control.Monad.Reader
+import           Control.Monad.Trans.AWS      hiding (LogLevel, Request)
+import           Control.Monad.Trans.Either
+import           Control.Monad.Trans.Resource
+import           Data.Aeson                   hiding ((.!=), (.=))
+import qualified Data.ByteString.Lazy         as LBS
+import           Data.CaseInsensitive
+import           Data.Default
+import           Data.Monoid
+import           Data.Text                    (pack, unpack)
+import           Data.Text.Lazy               (toStrict)
+import           Data.Text.Lazy.Builder       hiding (fromText)
+import           Data.Time
+import           Data.UUID
+import qualified Data.UUID                    as UUID
+import qualified Data.UUID.Types.Internal     as UUID
+import           Network.AWS.DynamoDB
+import           Network.HTTP.Types
+import           Network.Skylark.Core.Lens.TH
+import           Network.Skylark.Core.Prelude hiding (mask, uninterruptibleMask)
+import           Network.Wai
+import           Network.Wai.Handler.Warp
+import           System.Envy
+import           System.Statgrab
 
 --------------------------------------------------------------------------------
 -- Service configuration
@@ -250,6 +253,9 @@ instance Txt String where
 instance Txt ByteString where
   txt = decodeUtf8
 
+instance Txt LBS.ByteString where
+  txt = decodeUtf8 . LBS.toStrict
+
 instance Txt Builder where
   txt = toStrict . toLazyText
 
@@ -299,6 +305,12 @@ instance UnTxt String where
 instance UnTxt UTCTime where
   untxt s =
     untxt s >>= parseTimeM False defaultTimeLocale "%FT%T%z"
+
+instance UnTxt ByteString where
+  untxt = return . encodeUtf8
+
+instance UnTxt UUID where
+  untxt = maybe (fail "could not parse UUID") return . UUID.fromText
 
 instance ToJSON UUID where
   toJSON = toJSON . toText
