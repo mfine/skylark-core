@@ -59,8 +59,8 @@ traceNull _loc _source _level _s =
 
 trace :: MonadCore e m => (Text -> m ()) -> Text -> m ()
 trace logN s = do
-  clock  <- view ctxClock
-  time <- liftIO clock
+  clock    <- view ctxClock
+  time     <- liftIO clock
   preamble <- view ctxPreamble
   logN $ sformat (stext % " " % stext % " " % stext % "\n")
     (txt time) preamble s
