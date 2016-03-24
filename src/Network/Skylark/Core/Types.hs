@@ -173,8 +173,8 @@ data Ctx = Ctx
   , _ctxLog      :: Log
   , _ctxPreamble :: Text
   , _ctxSettings :: Settings
-  , _ctxStart    :: UTCTime
   , _ctxClock    :: IO UTCTime
+  , _ctxStart    :: UTCTime
   }
 
 $(makeClassyConstraints ''Ctx [''HasConf, ''HasEnv])
