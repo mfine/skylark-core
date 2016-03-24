@@ -51,10 +51,11 @@ newCtx c tag = do
   let _ctxConf     = c
       _ctxPreamble = preamble name
       _ctxSettings = newSettings port timeout
+      _ctxClock    = getCurrentTime
   logLevel  <- mandatory "log-level" $ c ^. confLogLevel
   _ctxEnv   <- newEnv Oregon $ FromEnv awsAccessKey awsSecretKey Nothing
   _ctxLog   <- newStderrTrace logLevel
-  _ctxStart <- getCurrentTime
+  _ctxStart <- _ctxClock
   return Ctx {..} where
     preamble name =
       sformat ("n=" % stext % " t=" % stext) name tag

@@ -1,6 +1,6 @@
-{-# LANGUAGE ConstraintKinds           #-}
-{-# LANGUAGE DeriveGeneric             #-}
-{-# LANGUAGE TemplateHaskell           #-}
+{-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DeriveGeneric   #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# OPTIONS  -fno-warn-orphans         #-}
 {-# OPTIONS  -fno-warn-unused-binds    #-}
 {-# OPTIONS  -fno-warn-unused-matches  #-}
@@ -20,11 +20,11 @@ module Test.Network.Skylark.Core.DynamoDB
 
 import           Control.Lens
 import           Data.Aeson
-import qualified Data.ByteString.Lazy           as LBS
+import qualified Data.ByteString.Lazy          as LBS
 import           Data.Derive.Arbitrary
 import           Data.DeriveTH
-import qualified Data.HashMap.Strict            as M
-import qualified Data.Text                      as T
+import qualified Data.HashMap.Strict           as M
+import qualified Data.Text                     as T
 import           GHC.Generics
 import           Network.AWS.DynamoDB
 import           Network.Skylark.Core.DynamoDB
