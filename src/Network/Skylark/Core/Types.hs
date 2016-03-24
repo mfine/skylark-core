@@ -41,7 +41,6 @@ import           Data.Text.Lazy.Builder       hiding (fromText)
 import           Data.Time
 import           Data.UUID
 import qualified Data.UUID                    as UUID
-import qualified Data.UUID.Types.Internal     as UUID
 import           Network.AWS.DynamoDB
 import           Network.HTTP.Types
 import           Network.Skylark.Core.Lens.TH
@@ -174,6 +173,7 @@ data Ctx = Ctx
   , _ctxLog      :: Log
   , _ctxPreamble :: Text
   , _ctxSettings :: Settings
+  , _ctxClock    :: IO UTCTime
   , _ctxStart    :: UTCTime
   }
 

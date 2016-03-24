@@ -15,13 +15,9 @@ module Network.Skylark.Core.Trace
   , newStdoutTrace
   , traceNull
   , traceDebug
-  , traceDebug'
   , traceInfo
-  , traceInfo'
   , traceWarn
-  , traceWarn'
   , traceError
-  , traceError'
   , traceMetric
   , traceEventCounter
   , traceEventTimer
@@ -31,7 +27,6 @@ module Network.Skylark.Core.Trace
 
 import Control.Lens
 import Control.Monad.Logger
-import Data.Time
 import Formatting
 import Network.Skylark.Core.Conf
 import Network.Skylark.Core.Prelude
@@ -64,40 +59,23 @@ traceNull _loc _source _level _s =
 
 trace :: MonadCore e m => (Text -> m ()) -> Text -> m ()
 trace logN s = do
-  time <- liftIO getCurrentTime
+  clock    <- view ctxClock
+  time     <- liftIO clock
   preamble <- view ctxPreamble
   logN $ sformat (stext % " " % stext % " " % stext % "\n")
     (txt time) preamble s
 
-trace' :: MonadIO m => (Text -> m b) -> Text -> m b
-trace' logN s = do
-  time <- liftIO getCurrentTime
-  logN $ sformat (stext % " " % stext % "\n")
-    (txt time) s
-
 traceDebug :: MonadCore e m => Text -> m ()
 traceDebug = trace logDebugN
-
-traceDebug' :: Text -> IO ()
-traceDebug' s = newStderrTrace LevelDebug >>= runLoggingT (trace' logDebugN s)
 
 traceInfo :: MonadCore e m => Text -> m ()
 traceInfo = trace logInfoN
 
-traceInfo' :: Text -> IO ()
-traceInfo' s = newStderrTrace LevelInfo >>= runLoggingT (trace' logInfoN s)
-
 traceWarn :: MonadCore e m => Text -> m ()
 traceWarn = trace logWarnN
 
-traceWarn' :: Text -> IO ()
-traceWarn' s = newStderrTrace LevelWarn >>= runLoggingT (trace' logWarnN s)
-
 traceError :: MonadCore e m => Text -> m ()
 traceError = trace logErrorN
-
-traceError' :: Text -> IO ()
-traceError' s = newStderrTrace LevelError >>= runLoggingT (trace' logErrorN s)
 
 --------------------------------------------------------------------------------
 -- Event logging: emit metrics to the application log.
