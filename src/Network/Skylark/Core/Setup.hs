@@ -19,6 +19,7 @@ import Control.Lens
 import Control.Monad.Trans.AWS                 hiding (timeout)
 import Data.Text
 import Data.Time
+import Network.AWS.DynamoDB
 import Network.Skylark.Core
 import Network.Skylark.Core.Async
 import Network.Skylark.Core.Conf
@@ -52,8 +53,10 @@ newCtx c tag = do
       _ctxPreamble = preamble name
       _ctxSettings = newSettings port timeout
       _ctxClock    = getCurrentTime
+      env          = newEnv Oregon $ FromEnv awsAccessKey awsSecretKey Nothing
   logLevel  <- mandatory "log-level" $ c ^. confLogLevel
-  _ctxEnv   <- newEnv Oregon $ FromEnv awsAccessKey awsSecretKey Nothing
+  _ctxEnv   <- maybe' (_confDdbLocalPort c) env $ \ddbLocalPort ->
+    env <&> configure (setEndpoint False "localhost" ddbLocalPort dynamoDB)
   _ctxLog   <- newStderrTrace logLevel
   _ctxStart <- _ctxClock
   return Ctx {..} where

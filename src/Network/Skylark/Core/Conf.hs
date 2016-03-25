@@ -48,6 +48,15 @@ port =
     <> metavar "PORT"
     <> help    "Port to listen on"
 
+-- | Parse DDB port.
+--
+ddbLocalPort :: Parser Int
+ddbLocalPort =
+  option auto
+    $  long    "ddb-local-port"
+    <> metavar "PORT"
+    <> help    "Localhost DDB port for testing (default none)"
+
 -- | Parse connection timeout.
 --
 timeout :: Parser Int
@@ -106,7 +115,8 @@ parseConf = Conf    <$>
   optional timeout  <*>
   optional logLevel <*>
   optional appName  <*>
-  bool metrics
+  bool metrics      <*>
+  optional ddbLocalPort
 
 -- | Produce a full command line options parser.
 --
