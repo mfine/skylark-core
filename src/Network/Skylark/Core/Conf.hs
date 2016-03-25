@@ -48,15 +48,6 @@ port =
     <> metavar "PORT"
     <> help    "Port to listen on"
 
--- | Parse DDB port.
---
-ddbPort :: Parser Int
-ddbPort =
-  option auto
-    $  long    "ddb-port"
-    <> metavar "PORT"
-    <> help    "DDB port (for testing: 8000)"
-
 -- | Parse connection timeout.
 --
 timeout :: Parser Int
@@ -101,6 +92,14 @@ metrics =
     $  long "metrics"
     <> help "Metrics Collection"
 
+-- | Local DDB.
+--
+localDdb :: Parser Bool
+localDdb =
+  switch
+    $  long "local-ddb"
+    <> help "Use Local Dynamo DB"
+
 bool :: Parser Bool -> Parser (Maybe Bool)
 bool =
   fmap $ \b ->
@@ -116,7 +115,7 @@ parseConf = Conf    <$>
   optional logLevel <*>
   optional appName  <*>
   bool metrics      <*>
-  optional ddbPort
+  bool localDdb
 
 -- | Produce a full command line options parser.
 --

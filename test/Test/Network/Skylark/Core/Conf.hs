@@ -124,7 +124,7 @@ testEnv =
           , _confLogLevel = Nothing
           , _confAppName  = Nothing
           , _confMetrics  = Nothing
-          , _confDdbPort  = Nothing
+          , _confLocalDdb = Nothing
           }
     , testCase "Port and Timeout" $ do
         unsetEnv "SKYLARK_CONF_FILE"
@@ -139,7 +139,7 @@ testEnv =
           , _confLogLevel = Nothing
           , _confAppName  = Nothing
           , _confMetrics  = Nothing
-          , _confDdbPort  = Nothing
+          , _confLocalDdb = Nothing
           }
      , testCase "String value" $ do
         setEnv "SKYLARK_CONF_FILE" "l"
@@ -154,7 +154,7 @@ testEnv =
           , _confLogLevel = Nothing
           , _confAppName  = Nothing
           , _confMetrics  = Nothing
-          , _confDdbPort  = Nothing
+          , _confLocalDdb = Nothing
           }
      , testCase "LevelInfo" $ do
         unsetEnv "SKYLARK_CONF_FILE"
@@ -169,7 +169,7 @@ testEnv =
           , _confLogLevel = Just LevelInfo
           , _confAppName  = Nothing
           , _confMetrics  = Nothing
-          , _confDdbPort  = Nothing
+          , _confLocalDdb = Nothing
           }
      , testCase "LevelOther" $ do
         unsetEnv "SKYLARK_CONF_FILE"
@@ -184,7 +184,7 @@ testEnv =
           , _confLogLevel = Just (LevelOther "other")
           , _confAppName  = Nothing
           , _confMetrics  = Nothing
-          , _confDdbPort  = Nothing
+          , _confLocalDdb = Nothing
           }
     ]
 
@@ -200,7 +200,7 @@ testDataFileFetch =
           , _confLogLevel = Just LevelDebug
           , _confAppName  = Nothing
           , _confMetrics  = Nothing
-          , _confDdbPort  = Nothing
+          , _confLocalDdb = Nothing
           }
     , testCase "Existing data file" $ do
         c <- getDataFile "conf/dev.yaml"
@@ -211,7 +211,7 @@ testDataFileFetch =
           , _confLogLevel = Just LevelInfo
           , _confAppName  = Nothing
           , _confMetrics  = Nothing
-          , _confDdbPort  = Nothing
+          , _confLocalDdb = Nothing
           }
     ]
 
@@ -304,7 +304,7 @@ testEnvProperties = testGroup "(checked by QuickCheck)"
                   set "SKYLARK_LOG_LEVEL" _confLogLevel
                   set "SKYLARK_APP_NAME"  _confAppName
                   set "SKYLARK_METRICS"   _confMetrics
-                  set "SKYLARK_DDB_PORT"  _confDdbPort
+                  set "SKYLARK_LOCAL_DDB" _confLocalDdb
                   decodeEnv
         Test.QuickCheck.Monadic.assert $ res == Right c
   ]

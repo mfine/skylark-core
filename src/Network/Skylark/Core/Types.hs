@@ -77,8 +77,7 @@ data Conf = Conf
   , _confLogLevel :: Maybe LogLevel -- ^ Logging level
   , _confAppName  :: Maybe Text     -- ^ Name of the application
   , _confMetrics  :: Maybe Bool     -- ^ Enable metrics collection
-  , _confDdbPort  :: Maybe Int      -- ^ Port of local DDB instance (if testing)
-                                    -- If unset, default to prod configuration.
+  , _confLocalDdb :: Maybe Bool     -- ^ Use a local DDB instance
   } deriving ( Eq, Show )
 
 $(makeClassy ''Conf)
@@ -104,7 +103,7 @@ instance Default Conf where
     , _confLogLevel = Just LevelInfo
     , _confAppName  = Nothing
     , _confMetrics  = Nothing
-    , _confDdbPort  = Nothing
+    , _confLocalDdb = Nothing
     }
 
 instance FromJSON Conf where
@@ -128,7 +127,7 @@ instance FromEnv Conf where
       envMaybe "SKYLARK_LOG_LEVEL" <*>
       envMaybe "SKYLARK_APP_NAME"  <*>
       envMaybe "SKYLARK_METRICS"   <*>
-      envMaybe "SKYLARK_DDB_PORT"
+      envMaybe "SKYLARK_LOCAL_DDB"
 
 instance Monoid Conf where
   mempty = Conf
@@ -138,7 +137,7 @@ instance Monoid Conf where
     , _confLogLevel = Nothing
     , _confAppName  = Nothing
     , _confMetrics  = Nothing
-    , _confDdbPort  = Nothing
+    , _confLocalDdb = Nothing
     }
 
   mappend a b = Conf
@@ -148,7 +147,7 @@ instance Monoid Conf where
     , _confLogLevel = merge _confLogLevel a b
     , _confAppName  = merge _confAppName a b
     , _confMetrics  = merge _confMetrics a b
-    , _confDdbPort  = merge _confDdbPort a b
+    , _confLocalDdb = merge _confLocalDdb a b
     }
 
 -- | Given a record field accessor. return the second non-Nothing

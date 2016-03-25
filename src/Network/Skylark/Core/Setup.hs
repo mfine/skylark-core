@@ -46,6 +46,7 @@ newCtx :: Conf         -- ^ Service configuration
        -> Text         -- ^ Git tag
        -> IO Ctx
 newCtx c tag = do
+  env     <- newEnv Oregon $ FromEnv awsAccessKey awsSecretKey Nothing
   name    <- mandatory "app-name" $ c ^. confAppName
   port    <- mandatory "port"     $ c ^. confPort
   timeout <- mandatory "timeout"  $ c ^. confTimeout
@@ -53,10 +54,9 @@ newCtx c tag = do
       _ctxPreamble = preamble name
       _ctxSettings = newSettings port timeout
       _ctxClock    = getCurrentTime
-      env          = newEnv Oregon $ FromEnv awsAccessKey awsSecretKey Nothing
+      _ctxEnv      = if not (fromMaybe False (_confLocalDdb c)) then env else
+                       env & configure (setEndpoint False "localhost" 8000 dynamoDB)
   logLevel  <- mandatory "log-level" $ c ^. confLogLevel
-  _ctxEnv   <- maybe' (_confDdbPort c) env $ \ddbPort ->
-    env <&> configure (setEndpoint False "localhost" ddbPort dynamoDB)
   _ctxLog   <- newStderrTrace logLevel
   _ctxStart <- _ctxClock
   return Ctx {..} where
