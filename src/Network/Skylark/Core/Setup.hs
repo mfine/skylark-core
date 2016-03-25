@@ -55,8 +55,8 @@ newCtx c tag = do
       _ctxClock    = getCurrentTime
       env          = newEnv Oregon $ FromEnv awsAccessKey awsSecretKey Nothing
   logLevel  <- mandatory "log-level" $ c ^. confLogLevel
-  _ctxEnv   <- maybe' (_confDdbPort c) env $ \ddbPort ->
-    env <&> configure (setEndpoint False "localhost" ddbPort dynamoDB)
+  _ctxEnv   <- maybe' (_confDdbLocalPort c) env $ \ddbLocalPort ->
+    env <&> configure (setEndpoint False "localhost" ddbLocalPort dynamoDB)
   _ctxLog   <- newStderrTrace logLevel
   _ctxStart <- _ctxClock
   return Ctx {..} where
