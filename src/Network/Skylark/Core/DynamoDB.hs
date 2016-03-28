@@ -75,7 +75,7 @@ attributeValueToValue av
   | Just v <- av ^. avS                 = A.String v
   | Just v <- av ^. avN                 = A.Number $ read v
   | Just v <- av ^. avBOOL              = A.Bool v
+  | Just _ <- av ^. avNULL              = A.Null
   |      v <- av ^. avM, not (M.null v) = A.Object $ fmap attributeValueToValue v
   |     vs <- av ^. avL                 = A.Array $ attributeValueToValue <$> V.fromList vs
-  | Just _ <- av ^. avNULL              = A.Null
   | otherwise                           = error "Remaining types are unsupported!"
