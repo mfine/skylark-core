@@ -9,7 +9,8 @@
 module Test.Network.Skylark.Core.Setup where
 
 import BasicPrelude
-import Control.Lens
+import Control.Lens               hiding ((.=))
+import Data.Aeson
 import Data.Default
 import Network.Skylark.Core.Conf
 import Network.Skylark.Core.Setup
@@ -27,7 +28,7 @@ testCtxInit =
         i <- getDataFileName "conf/info.yaml" >>= getDataFile
         let d = def & confAppName  .~ Just "Testing"
         t <- newCtx d (i ^. ifTag)
-        t ^. ctxPreamble   @?= "n=Testing t=deedbeef-fake"
+        t ^. ctxPrefix @?= object [("name", String "Testing"), ("tag", String "sample")]
     ]
 
 tests :: TestTree

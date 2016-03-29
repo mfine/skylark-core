@@ -178,7 +178,8 @@ data Ctx = Ctx
   { _ctxConf     :: Conf
   , _ctxEnv      :: Env
   , _ctxLog      :: Log
-  , _ctxPreamble :: Text
+  , _ctxGroup    :: Text
+  , _ctxPrefix   :: Value
   , _ctxSettings :: Settings
   , _ctxClock    :: IO UTCTime
   , _ctxStart    :: UTCTime
@@ -429,18 +430,6 @@ type Barrier = MVar ()
 -- The model here is based on ghc-events and
 -- https://github.com/brendanhay/network-metrics/.
 
--- | Host name
---
-type HostName = ByteString
-
--- | Metric group
---
-type Group = Text
-
--- | Metric bucket
---
-type Bucket = ByteString
-
 -- | Metrics
 --
 -- These types are agnostic as to the metrics collector used, but are
@@ -450,13 +439,13 @@ type Bucket = ByteString
 --
 data Metric =
   -- | A simple counter, set to 0 at each flush
-    Counter Group Bucket Integer
+    Counter ByteString Integer
   -- | A timing interval
-  | Timer   Group Bucket Double
+  | Timer   ByteString Double
   -- | An arbitrary value that can be recorded
-  | Gauge   Group Bucket Double
+  | Gauge   ByteString Double
   -- | Counts unique occurrences of events between flushes.
-  | Set     Group Bucket Double
+  | Set     ByteString Double
     deriving (Show, Eq)
 
 -- | Class of measurable instances.
@@ -465,7 +454,7 @@ class Measurable a where
   -- | Create a metric from some instance under some grouping
   -- A group typically uniquely identifies a host and an application.
   --
-  measure :: Group -> a -> [Metric]
+  measure :: a -> [Metric]
 
 type SystemStat =
   ( Host
@@ -477,67 +466,70 @@ type SystemStat =
   )
 
 instance Txt Metric where
-  txt (Counter g b v) = sformat (stext % "." % stext % ":" % stext % "|c") g (txt b) (txt v)
-  txt (Timer   g b v) = sformat (stext % "." % stext % ":" % stext % "|t") g (txt b) (txt v)
-  txt (Gauge   g b v) = sformat (stext % "." % stext % ":" % stext % "|g") g (txt b) (txt v)
-  txt (Set     g b v) = sformat (stext % "." % stext % ":" % stext % "|s") g (txt b) (txt v)
+  txt (Counter b v) = sformat (stext % ":" % stext % "|c") (txt b) (txt v)
+  txt (Timer   b v) = sformat (stext % ":" % stext % "|t") (txt b) (txt v)
+  txt (Gauge   b v) = sformat (stext % ":" % stext % "|g") (txt b) (txt v)
+  txt (Set     b v) = sformat (stext % ":" % stext % "|s") (txt b) (txt v)
 
 instance Measurable Host where
-  measure gr Host{..} =
-    [ Gauge gr "hostUptime" $ realToFrac hostUptime ]
+  measure Host{..} =
+    [ Gauge "hostUptime" $ realToFrac hostUptime ]
 
 instance Measurable Memory where
-  measure gr Memory{..} =
-    [ Gauge gr "memTotal"        $ fromIntegral memTotal
-    , Gauge gr "memFreeFraction" $ fromIntegral memFree / fromIntegral memTotal
-    , Gauge gr "memFree"         $ fromIntegral memFree
-    , Gauge gr "memUsedFraction" $ fromIntegral memUsed / fromIntegral memTotal
-    , Gauge gr "memUsed"         $ fromIntegral memUsed
-    , Gauge gr "memCache"        $ fromIntegral memCache
+  measure Memory{..} =
+    [ Gauge "memTotal"        $ fromIntegral memTotal
+    , Gauge "memFreeFraction" $ fromIntegral memFree / fromIntegral memTotal
+    , Gauge "memFree"         $ fromIntegral memFree
+    , Gauge "memUsedFraction" $ fromIntegral memUsed / fromIntegral memTotal
+    , Gauge "memUsed"         $ fromIntegral memUsed
+    , Gauge "memCache"        $ fromIntegral memCache
     ]
 
 instance Measurable Load where
-  measure gr Load{..} =
-    [ Gauge gr "load1"  load1
-    , Gauge gr "load5"  load5
-    , Gauge gr "load15" load15
+  measure Load{..} =
+    [ Gauge "load1"  load1
+    , Gauge "load5"  load5
+    , Gauge "load15" load15
     ]
 
 instance Measurable DiskIO where
-  measure gr DiskIO{..} =
-    [ Gauge gr (diskName <> ".diskRead")  $ fromIntegral diskRead
-    , Gauge gr (diskName <> ".diskWrite") $ fromIntegral diskWrite
+  measure DiskIO{..} =
+    [ Gauge (diskName <> ".diskRead")  $ fromIntegral diskRead
+    , Gauge (diskName <> ".diskWrite") $ fromIntegral diskWrite
     ]
 
 instance Measurable a => Measurable [a] where
-  measure gr = concatMap (measure gr)
+  measure = concatMap measure
 
 instance Measurable NetworkIO where
-  measure gr NetworkIO{..} =
-    [ Gauge gr (ifaceIOName <> ".ifaceTX")         $ fromIntegral ifaceTX
-    , Gauge gr (ifaceIOName <> ".ifaceRX")         $ fromIntegral ifaceRX
-    , Gauge gr (ifaceIOName <> ".ifaceIPackets")   $ fromIntegral ifaceIPackets
-    , Gauge gr (ifaceIOName <> ".ifaceOPackets")   $ fromIntegral ifaceOPackets
-    , Gauge gr (ifaceIOName <> ".ifaceIErrors")    $ fromIntegral ifaceIErrors
-    , Gauge gr (ifaceIOName <> ".ifaceCollisions") $ fromIntegral ifaceCollisions
+  measure NetworkIO{..} =
+    [ Gauge (ifaceIOName <> ".ifaceTX")         $ fromIntegral ifaceTX
+    , Gauge (ifaceIOName <> ".ifaceRX")         $ fromIntegral ifaceRX
+    , Gauge (ifaceIOName <> ".ifaceIPackets")   $ fromIntegral ifaceIPackets
+    , Gauge (ifaceIOName <> ".ifaceOPackets")   $ fromIntegral ifaceOPackets
+    , Gauge (ifaceIOName <> ".ifaceIErrors")    $ fromIntegral ifaceIErrors
+    , Gauge (ifaceIOName <> ".ifaceCollisions") $ fromIntegral ifaceCollisions
     ]
 
 instance Measurable FileSystem where
-  measure gr FileSystem{..} =
-    [ Gauge gr (fsDeviceName <> ".fsUsed")         $ fromIntegral fsUsed
-    , Gauge gr (fsDeviceName <> ".fsFree")         $ fromIntegral fsFree
-    , Gauge gr (fsDeviceName <> ".fsUsedFraction") $ fromIntegral fsUsed / fromIntegral fsSize
-    , Gauge gr (fsDeviceName <> ".fsFreeFraction") $ fromIntegral fsFree / fromIntegral fsSize
+  measure FileSystem{..} =
+    [ Gauge (fsDeviceName <> ".fsUsed")         $ fromIntegral fsUsed
+    , Gauge (fsDeviceName <> ".fsFree")         $ fromIntegral fsFree
+    , Gauge (fsDeviceName <> ".fsUsedFraction") $ fromIntegral fsUsed / fromIntegral fsSize
+    , Gauge (fsDeviceName <> ".fsFreeFraction") $ fromIntegral fsFree / fromIntegral fsSize
     ]
 
 instance Measurable SystemStat where
-  measure gr (h, m, l, d, n, f) =
-    measure gr h <>
-    measure gr m <>
-    measure gr l <>
-    measure gr d <>
-    measure gr n <>
-    measure gr f
+  measure (h, m, l, d, n, f) =
+    measure h <>
+    measure m <>
+    measure l <>
+    measure d <>
+    measure n <>
+    measure f
+
+class ToJSON a => ToMetric a where
+  toMetric :: a -> Maybe Metric
 
 instance MonadMask m => MonadMask (EitherT err m) where
   mask act = EitherT $ mask $ \restore ->

@@ -15,8 +15,9 @@ module Network.Skylark.Core.Setup
   ) where
 
 import Control.Concurrent.Async
-import Control.Lens
+import Control.Lens                            hiding ((.=))
 import Control.Monad.Trans.AWS                 hiding (timeout)
+import Data.Aeson
 import Data.Text
 import Data.Time
 import Network.AWS.DynamoDB
@@ -49,19 +50,20 @@ newCtx c tag = do
   name    <- mandatory "app-name" $ c ^. confAppName
   port    <- mandatory "port"     $ c ^. confPort
   timeout <- mandatory "timeout"  $ c ^. confTimeout
+  env     <- newEnv Oregon $ FromEnv awsAccessKey awsSecretKey Nothing
   let _ctxConf     = c
-      _ctxPreamble = preamble name
+      _ctxEnv      = ddbLocal env
+      _ctxGroup    = name
+      _ctxPrefix   = object [ "name" .= name, "tag" .= tag ]
       _ctxSettings = newSettings port timeout
       _ctxClock    = getCurrentTime
-      env          = newEnv Oregon $ FromEnv awsAccessKey awsSecretKey Nothing
   logLevel  <- mandatory "log-level" $ c ^. confLogLevel
-  _ctxEnv   <- maybe' (_confDdbLocalPort c) env $ \ddbLocalPort ->
-    env <&> configure (setEndpoint False "localhost" ddbLocalPort dynamoDB)
   _ctxLog   <- newStderrTrace logLevel
   _ctxStart <- _ctxClock
   return Ctx {..} where
-    preamble name =
-      sformat ("n=" % stext % " t=" % stext) name tag
+    ddbLocal env =
+      maybe' (_confDdbLocalPort c) env $ \ddbLocalPort ->
+        env & configure (setEndpoint False "localhost" ddbLocalPort dynamoDB)
 
 -- | Core context with some periodic health checking.
 --
@@ -79,6 +81,5 @@ withHealthCheck c action =
 checkHealth :: HasCtx e => e -> IO ()
 checkHealth c =
   runCoreIO c $ do
-    gr <- getEventGroup
     s  <- runStats sampleStats
-    mapM_ traceMetric $ measure gr s
+    mapM_ metricInfo $ measure s

@@ -20,25 +20,21 @@ testMetricSerialization :: TestTree
 testMetricSerialization =
   testGroup "Sanity check statsd metric serialization"
     [ testCase "Counters" $ do
-        let g = "skylark-test.dummyhost"
-            b = "counter"
+        let b = "counter"
             v = 1
-        txt (Counter g b v) @?= "skylark-test.dummyhost.counter:1|c"
+        txt (Counter b v) @?= "counter:1|c"
     , testCase "Timers" $ do
-        let g = "skylark-test.dummyhost"
-            b = "timer"
+        let b = "timer"
             v = 1
-        txt (Timer g b v)  @?= "skylark-test.dummyhost.timer:1.0|t"
+        txt (Timer b v)   @?= "timer:1.0|t"
     , testCase "Gauges" $ do
-        let g = "skylark-test.dummyhost"
-            b = "gauge"
+        let b = "gauge"
             v = 1
-        txt (Gauge g b v)  @?= "skylark-test.dummyhost.gauge:1.0|g"
+        txt (Gauge b v)   @?= "gauge:1.0|g"
     , testCase "Sets" $ do
-        let g = "skylark-test.dummyhost"
-            b = "set"
+        let b = "set"
             v = 1
-        txt (Set g b v)    @?= "skylark-test.dummyhost.set:1.0|s"
+        txt (Set b v)     @?= "set:1.0|s"
     ]
 
 checkStatList :: [Metric] -> IO ()
@@ -54,8 +50,8 @@ testStatGrab =
         void $ runStats sampleStats
     , testCase "statsgrab produces gauge metrics" $ do
         s <- runStats sampleStats
-        assertBool "Invalid number of stats" $ length (measure "test!" s) >= 10
-        checkStatList $ measure "test!" s
+        assertBool "Invalid number of stats" $ length (measure s) >= 10
+        checkStatList $ measure s
     ]
 
 tests :: TestTree

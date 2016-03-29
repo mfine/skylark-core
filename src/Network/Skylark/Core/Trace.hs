@@ -10,29 +10,28 @@
 -- Trace module for Skylark Core.
 
 module Network.Skylark.Core.Trace
-  ( getEventGroup
-  , newStderrTrace
+  ( newStderrTrace
   , newStdoutTrace
   , traceNull
-  , traceDebug
-  , traceInfo
-  , traceWarn
-  , traceError
-  , traceMetric
-  , traceEventCounter
-  , traceEventTimer
-  , traceEventGauge
-  , traceEventSet
+  , metricDebug
+  , metricInfo
+  , metricWarn
+  , metricError
+  , emitDebug
+  , emitInfo
+  , emitWarn
+  , emitError
   ) where
 
-import Control.Lens
+import Control.Lens                 hiding ((.=))
 import Control.Monad.Logger
+import Data.Aeson
+import Data.Aeson.Encode
+import Data.ByteString.Builder
 import Formatting
-import Network.Skylark.Core.Conf
 import Network.Skylark.Core.Prelude
 import Network.Skylark.Core.Types
 import System.Log.FastLogger
-import System.Statgrab
 
 --------------------------------------------------------------------------------
 -- Text logging
@@ -57,80 +56,51 @@ traceNull :: Log
 traceNull _loc _source _level _s =
   return ()
 
-trace :: MonadCore e m => (Text -> m ()) -> Text -> m ()
-trace logN s = do
-  clock    <- view ctxClock
-  time     <- liftIO clock
-  preamble <- view ctxPreamble
-  logN $ sformat (stext % " " % stext % " " % stext % "\n")
-    (txt time) preamble s
-
-traceDebug :: MonadCore e m => Text -> m ()
-traceDebug = trace logDebugN
-
-traceInfo :: MonadCore e m => Text -> m ()
-traceInfo = trace logInfoN
-
-traceWarn :: MonadCore e m => Text -> m ()
-traceWarn = trace logWarnN
-
-traceError :: MonadCore e m => Text -> m ()
-traceError = trace logErrorN
-
 --------------------------------------------------------------------------------
--- Event logging: emit metrics to the application log.
+-- Event logging: emit JSON and metrics to the application log.
 
-type ToMetric t = Group -> Bucket -> t -> Metric
-
-getHostName :: IO HostName
-getHostName =  hostName <$> runStats (snapshot :: Stats Host)
-
--- | Produces an string used to identify a group of events, typically
--- using the app and host name.
---
-getEventGroup :: MonadCore e m => m Text
-getEventGroup = do
-  hostName <- liftIO getHostName
-  appName  <- view confAppName >>= liftIO . mandatory "app-name"
-  return $ sformat (stext % "." % stext) appName (txt hostName)
-
--- | Emit a key-value for any Metric constructor.
---
-traceEvent :: (Num t, MonadCore e m)
-           => ToMetric t         -- ^ Constructor for a metric
-           -> Bucket             -- ^ Metric key
-           -> t                  -- ^ Any numeric value
-           -> m ()
-traceEvent metricType key value = do
+metric :: MonadCore e m => (Text -> m ()) -> Metric -> m ()
+metric logN m = do
   metrics <- view confMetrics
   when (fromMaybe False metrics) $ do
-    group' <- getEventGroup
-    trace logInfoN $ sformat ("event=metric : " % stext) (txt $ metricType group' key value)
+    g <- view ctxGroup
+    logN $ sformat (":" % stext % "." % stext) g (txt m)
 
--- | Emit a single metric event to the log.
---
-traceMetric :: MonadCore e m => Metric -> m ()
-traceMetric metric = do
-  metrics <- view confMetrics
-  when (fromMaybe False metrics) $
-    trace logInfoN $ sformat ("event=metric : " % stext) (txt metric)
+metricDebug :: MonadCore e m => Metric -> m ()
+metricDebug = metric logDebugN
 
--- | Emit a key-value counter.
---
-traceEventCounter :: MonadCore e m => Bucket -> Integer -> m ()
-traceEventCounter = traceEvent Counter
+metricInfo :: MonadCore e m => Metric -> m ()
+metricInfo = metric logInfoN
 
--- | Emit a key-value timing measurement.
---
-traceEventTimer :: MonadCore e m => Bucket -> Double -> m ()
-traceEventTimer = traceEvent Timer
+metricWarn :: MonadCore e m => Metric -> m ()
+metricWarn = metric logWarnN
 
--- | Emit a key-value scalar quantity.
---
-traceEventGauge :: MonadCore e m => Bucket -> Double -> m ()
-traceEventGauge = traceEvent Gauge
+metricError :: MonadCore e m => Metric -> m ()
+metricError = metric logErrorN
 
--- | Emit a key-value event for which we want to measure unique occurrences.
---
-traceEventSet :: MonadCore e m => Bucket -> Double -> m ()
-traceEventSet = traceEvent Set
+newPrefix :: MonadCore e m => m Value
+newPrefix = do
+  clock  <- view ctxClock
+  time   <- liftIO clock
+  prefix <- view ctxPrefix
+  return $ mergeObjects prefix $ object [ "time" .= time ]
+
+emit :: (MonadCore e m, ToMetric a) => (Text -> m ()) -> a -> m ()
+emit logN e = do
+  prefix <- newPrefix
+  logN $ txt $ toLazyByteString $ encodeToBuilder $
+    mergeObjects prefix $ toJSON e
+  maybe (return ()) (metric logN) (toMetric e)
+
+emitDebug :: (MonadCore e m, ToMetric a) => a -> m ()
+emitDebug = emit logDebugN
+
+emitInfo :: (MonadCore e m, ToMetric a) => a -> m ()
+emitInfo = emit logInfoN
+
+emitWarn :: (MonadCore e m, ToMetric a) => a -> m ()
+emitWarn = emit logWarnN
+
+emitError :: (MonadCore e m, ToMetric a) => a -> m ()
+emitError = emit logErrorN
+
